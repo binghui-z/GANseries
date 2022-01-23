@@ -45,18 +45,18 @@ class minist_Loader(torch.utils.data.Dataset):
                 transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5), 
                 transforms.ToTensor(), # (0, 255) uint8 HWC-> (0, 1.0) float32 CHW
                 transforms.RandomApply([ReverseColor()]), # AddGaussianNoise()
-                transforms.RandomApply([AddGaussianNoise()]),
+                transforms.RandomApply([AddGaussianNoise()]),  #自己定义的transformer
                 ])
              
         else:
             self.transform = pTansfom
         
         with gzip.open(pImgUbyte_absfilename,'rb') as fin:
-            magic_number = int.from_bytes(fin.read(4), 'big')
-            self.img_count = int.from_bytes(fin.read(4), 'big')
-            row_count = int.from_bytes(fin.read(4), 'big')
-            column_count = int.from_bytes(fin.read(4), 'big')
-            img_data = fin.read()
+            magic_number = int.from_bytes(fin.read(4), 'big')  #相等于进入到了压缩文件里面
+            self.img_count = int.from_bytes(fin.read(4), 'big') #这个文件夹下文件总数，也就是图片数量
+            row_count = int.from_bytes(fin.read(4), 'big')#针对每一个图片有多少行
+            column_count = int.from_bytes(fin.read(4), 'big')#针对每一个图片有多少列
+            img_data = fin.read()   #如果不经过前面fin.read(4)的话，len(img_data)=47040012敲好恰好等于所有图片的像素总和。img_count*row_count*column_count
             self.imgLst_Arr = np.frombuffer(img_data, dtype=np.uint8) \
                     .reshape((self.img_count, row_count, column_count))
         
@@ -65,7 +65,7 @@ class minist_Loader(torch.utils.data.Dataset):
             self.label_count = int.from_bytes(fin.read(4), 'big')
             label_data = fin.read()
             self.labelLst_Arr = np.frombuffer(label_data, dtype=np.uint8)
-            self.class_num = np.max(self.labelLst_Arr) + 1 # 10
+            self.class_num = np.max(self.labelLst_Arr) + 1 # 10  ,因为0也算一种，所以label的种类要加1
         assert self.img_count == self.label_count, "image and label nums mismatch."
 
     def __len__(self):
@@ -85,21 +85,21 @@ class minist_Loader(torch.utils.data.Dataset):
 
 
 if __name__ == "__main__":
-
+    #数据集下载地址
     imgUbyte_absfilename = r"datasets\MNIST\train-images-idx3-ubyte.gz"
     labelUbyte_absfilename = r"datasets\MNIST\train-labels-idx1-ubyte.gz"
 
 
-    gm_dataset = minist_Loader(imgUbyte_absfilename, labelUbyte_absfilename)
+    gm_dataset = minist_Loader(imgUbyte_absfilename, labelUbyte_absfilename) #读取数据集
 
-    trainloader = torch.utils.data.DataLoader(dataset = gm_dataset, batch_size = 64, 
+    trainloader = torch.utils.data.DataLoader(dataset = gm_dataset, batch_size = 64,  #dataloader
                         shuffle= False, num_workers = 1)
     
     for i_idx, pac_i in enumerate(trainloader):
-        img_Tsor_bacth_i, label_Tsor_bacth_i = pac_i
+        img_Tsor_bacth_i, label_Tsor_bacth_i = pac_i  #从dataloader中读出每个数据对应的图片和label
         print(img_Tsor_bacth_i.shape, label_Tsor_bacth_i.shape)
         print(torch.max(img_Tsor_bacth_i[0]), torch.min(img_Tsor_bacth_i[0]))
-        view_tensor(torchvision.utils.make_grid(
+        view_tensor(torchvision.utils.make_grid(   #显示每个数据中的图片
                         tensor = img_Tsor_bacth_i, 
                         nrow= 8)
             )

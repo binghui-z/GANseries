@@ -90,9 +90,9 @@ class train_config(ut_cfg.config):
         
 if __name__ == "__main__":
     
-    gm_real_label = 1
-    gm_real_confidence = 0.9
-    gm_fake_label = 0
+    gm_real_label = 1    #若为真实数据标签，则设为1 
+    gm_real_confidence = 0.9  #认为置信度大于0.9即为真
+    gm_fake_label = 0    #若为伪造数据标签，则设为0 
 
     gm_cfg = train_config()
     gm_log = ut_log.logger(gm_cfg.log_root_path, gm_cfg.saving_id)
@@ -103,10 +103,10 @@ if __name__ == "__main__":
         num_workers= gm_cfg.ld_workers
     )
 
-    gm_netG = dc_m.Generator(gm_cfg.latent_num)
-    gm_netD = dc_m.Discriminator()
+    gm_netG = dc_m.Generator(gm_cfg.latent_num)   #定义生成器  ，这里的latent_num要与输入的channel对齐
+    gm_netD = dc_m.Discriminator()                #定义判别器
 
-    gm_cfg.init_net(gm_netG, gm_cfg.method_init, istrain=True)
+    gm_cfg.init_net(gm_netG, gm_cfg.method_init, istrain=True)  #这是干啥用的？
     gm_cfg.init_net(gm_netD, gm_cfg.method_init, istrain=True)
 
     # optimizer & scheduler
@@ -166,10 +166,10 @@ if __name__ == "__main__":
                 BS = img_Tsor_bacth_i.shape[0]
                 gm_optimizerD.zero_grad()
 
-                # train D with real
+                # train D with real #*判断真实样本的判断器
                 imgR_Tsor_bacth_i = img_Tsor_bacth_i.to(gm_cfg.device)
                 gt_Tsor_bacth_i = torch.full((BS, 1), gm_real_label*gm_real_confidence, device = gm_cfg.device)
-
+        
                 predR_Tsor_bacth_i = gm_netD(imgR_Tsor_bacth_i)
 
                 lossD_R = gm_criterion(predR_Tsor_bacth_i, gt_Tsor_bacth_i)
@@ -177,9 +177,10 @@ if __name__ == "__main__":
                 lossD_R.backward()
 
                 # train D with fake
+                #*随机生成的假样本，但是size要于判别器匹配
                 noise_Tsor_bacth_i = gm_cfg.noise_generate_func(BS, gm_cfg.latent_num)
                 imgF_Tsor_bacth_i = gm_netG(noise_Tsor_bacth_i)
-                gt_Tsor_bacth_i.fill_(gm_fake_label) # reuse the space
+                gt_Tsor_bacth_i.fill_(gm_fake_label) # reuse the space，假样本都置为0
 
                 predF_Tsor_bacth_i = gm_netD(imgF_Tsor_bacth_i.detach())
 
@@ -210,7 +211,7 @@ if __name__ == "__main__":
 
                 # the request for G:
                 # produce D'judge as close as '1'.
-
+                #也就是说判别器认为生成器的都是真样本，说明生成器伪造能力很高，也就把生成器G训练出来了
                 lossG = gm_criterion(judge_Tsor_bacth_i, gt_Tsor_bacth_i)
 
                 lossG.backward()                
@@ -241,7 +242,7 @@ if __name__ == "__main__":
             if epoch_i % gm_cfg.validate_epoch_interval == 0:
                 gm_cfg.validate(gm_netD, gm_netG, gm_log, epoch_i)
 
-            lossD_an_epoch_Lst.clear()
+            lossD_an_epoch_Lst.clear()  #这里的列表一定要确保下次用的时候从零开始。因为定义在for循环之前，所以要清空
             lossG_an_epoch_Lst.clear()
 
             if (epoch_i >gm_cfg.save_epoch_begin and epoch_i %gm_cfg.save_epoch_interval == 1):
