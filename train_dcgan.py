@@ -22,7 +22,7 @@ import custom_utils.logger as ut_log
 class train_config(ut_cfg.config):
     def __init__(self):
         super(train_config, self).__init__(saving_id = "dcgan_mnist_BCE",
-            pBs = 64, pWn = 2, p_force_cpu = True)
+            pBs = 64, pWn = 2, p_force_cpu = False)
 
         self.total_epoch = 100
         self.save_epoch_begin = 0
@@ -157,7 +157,7 @@ if __name__ == "__main__":
             gm_netD.train()
             gm_netG.train()
 
-            for iter_idx, (img_Tsor_bacth_i, _ ) in enumerate(gm_trainloader):
+            for iter_idx, (img_Tsor_bacth_i, _ ) in enumerate(gm_trainloader): #在GAN中，标签不再是数据集中图片对应的数字标签，而是0/1表示是真实数据还是伪数据，所以第二个输出空着不用
                 ############################
                 # (1) Update D network: maximize log(D(x)) + log(1 - D(G(z)))
                 # k(update) = 2; 1 turn for real, another for fake
@@ -226,13 +226,13 @@ if __name__ == "__main__":
             gm_schedulerD.step(avgD_loss)
             gm_schedulerG.step(avgG_loss)
 
-            gm_log.board_scalars_singlechart("dcmnist_loss", 
-                {"d_loss": avgD_loss, 
+            gm_log.board_scalars_singlechart("dcmnist_loss", #显示log
+                {"d_loss": avgD_loss,  
                 "g_loss": avgG_loss, 
                 },epoch_i
                 )
             
-            gm_log.log_scalars_singleline([
+            gm_log.log_scalars_singleline([#写log
                     ["epoch", epoch_i], 
                     ["time_cost(min)", delta_t], 
                     ["d_loss", avgD_loss], 

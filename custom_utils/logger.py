@@ -60,7 +60,7 @@ class logger(object):
         self.log_the_str(line_str)
         
 
-    def summarize_config(self, pConfig):
+    def summarize_config(self, pConfig): 
         info_table = [['item', 'detail']]
         info_table.append(["config id", pConfig.saving_id])
         info_table.append(["# epochs", pConfig.total_epoch])
